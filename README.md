@@ -1,7 +1,5 @@
 # 🔎🗺️ Ius Nominatim
 
-----
-
 Ius Nominatim (from Latin, _'by the correct name'_), is a tool to search Open Street Map (OSM) data by name, address and Brazilian municipality (geocoding). The idea will be to:
 
 1. use [libpostal's](https://github.com/openvenues/libpostal) library for parsing/normalizing street addresses; 
