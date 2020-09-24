@@ -1,0 +1,56 @@
+Preparar container
+https://github.com/ClickSend/libpostal-rest-docker
+curl POST -d '{"query": "Quatre-vingt-douze Ave des Champs-Élisées"}' localhost:3000/expand
+docker start boring_poitras
+
+Preparar container nominatim
+https://github.com/mediagis/nominatim-docker/tree/master/3.5
+
+Testar container usando pacote abaixo
+https://github.com/ironholds/poster
+
+Testar container usando pacote abaixo
+https://github.com/hrbrmstr/nominatim
+
+Reunião marcada para dia 25set, 11h! Tem que estar pronto algo apresentável até lá!!!
+
+
+
+Apresentação:
+Antes de tudo, porque?!
+	O MEC não tem essa informação! É provável que pouquíssimos players privados tenham tido a capacidade e interesse de realizar esse mapeamento, e menos ainda com capacidade de conferir essa informação como o do time de hunters que a Quero possui
+
+	Escolas possuem um mercado muito mais fragmentado, com muito mais opções que faculdades num espaço pequeno; isso nos permite inferir que a dimensão "proximidade de casa" seja muito mais forte no Ensino Básico que no Ensino Superiro
+
+	A própria navegação dos usuários indecisos, entre PDPs pode nos informar bastante sobre o espaço geográfico que os usuários consideram quando buscam por uma escola
+
+	Podemos distribuir leads de forma geográfica: do lado B2C, o interesse em uma escola pode, por exemplo, justificar ofertas de escolas pŕoximas para aqueles leads; do lado B2B, as escolas podem estar diretamente interessadas nos leads de escolas próximas a elas, aumentando descontos para cobrir ofertas e pegar esses leads; 
+
+	A proximidade já está sendo usada nos pitches dos hunters, mostrando para as escolas que já há concorrentes próximos, com resultados, no marketplace
+
+Primeiro problema: informações espalhadas entre três tabelas
+	Juntando as três bases de escolas e tomando a melhorescolas.escolas como principal, quantas escolas privadas não tem geocodificação?
+		18141 escolas
+	Quantas escolas privadas no escolas?
+		59832 escolas
+	Quantas escolas privadas ativas no escolas (não deletadas)?
+		58763 escolas
+	Quantas escolas privadas no basefinal_me tem codent e quantas não tem?
+		59683 escolas tem codent
+		16697 escolas não tem codent
+	Quantas escolas privadas com codent no basefinal_me não estão no escolas?
+		372 escolas com codent e não estão no escolas; 1058 já estão marcadas como deletadas no escolas
+	Quantas escolas privadas no escolas_custom não estão no escolas?
+	456 escolas com codent não estão no escolas; 499 já estão marcadas como deletadas no escolas
+Segundo problema:
+	Endereços ruins
+	Mostrar apresentação do pessoal do Quero Analytics
+Terceiro problema:
+	Endereços fora do município que deveriam estar
+	Nao temos mapa dos bairros, mas temos das cidades; elas no mínimo deveria estar na cidade que foram reportadas
+
+Solução:
+	Solução antiga: 
+		Google OSM manual
+		Limpeza manual de lat/lon em cidades erradas
+	Nominatim OSM + Google OSM + LibPostal + geochecker, tudo num serviço docker
