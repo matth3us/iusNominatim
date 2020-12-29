@@ -30,18 +30,24 @@ cities <-
 ## input: string com endereço original  
 ## output: dataframe com endereço parseado, com colunas para cada uma das labels + coluna source para o endereço parseado
 # https://github.com/ClickSend/libpostal-rest-docker
-# curl POST -d '{"query": "Quatre-vingt-douze Ave des Champs-Élisées"}' localhost:3000/expand
+  # curl POST -d '{"query": "Quatre-vingt-douze Ave des Champs-Élisées"}' localhost:3000/expand
 # docker start boring_poitras
 
-get_better_address <- function(address){
+getBetterAddress <- function(address, host = "localhost:3000"){
   libpostal_query <- 
       paste0('{"query": "', address, '"}')
   expanded_address <- 
-      httr::POST("localhost:3000/expand", body = libpostal_query) %>% 
+      httr::POST(paste0(host,"/expand"), body = libpostal_query) %>% 
       httr::content() %>%
-      c(stringr::str_to_lower(address))
+      c(stringr::str_to_lower(address)) %>% 
+      lapply(function(x){return(
+        createAddress(list(address = x))
+        )})
   return(expanded_address)
 }
+
+test <- get_better_address("Quatre-vingt-douze Ave des Champs-Élisées")
+lapply(test, createAddress)
 
 get_parsed_address <- function(address){
   #labels úteis do libpostal 
@@ -118,7 +124,7 @@ check_geocoded_city <- function(lat, lon, city_ibge=NULL){
 ## Função para geolocalizar endereços usando OSM nomimatim e Google Maps API  
 
 #alterar para usar docker local
-get_coords_osm <- function(address = NULL){
+get_coords_osm <- function(address = NULL, host = 'http://nominatim.openstreetmap.org/search/@addr@?format=json&addressdetails=0&limit=1'){
   #Se não passar endereço, retornar data frame vazio
   if(suppressWarnings(is.null(address))){return(data.frame())}
   
@@ -126,7 +132,7 @@ get_coords_osm <- function(address = NULL){
   tryCatch(
     d <- jsonlite::fromJSON( 
       gsub('\\@addr\\@', gsub('\\s+', '\\%20', address), 
-           'http://nominatim.openstreetmap.org/search/@addr@?format=json&addressdetails=0&limit=1')
+           host)
     ), error = function(c) return(data.frame())
   )
   #Se a chamada não retornar nada, retornar data frame vazio
