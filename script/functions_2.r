@@ -22,14 +22,12 @@ lock.and.load('stringr')
 
 ## -------
 ## Carregar as cidades do IBGE como input para funções
-cities <- 
-  readRDS('./transformed/cities.rds')
+ibge <- readRDS('./transformed/ibge')
 
 
 #########################
 ## MELHORIAS NAS FUNÇÕES
 #########################
-
 
 test <- list(address = "planalto vinhais ii, rua 7, casa 7", code_ibge = 412673)
 
@@ -120,15 +118,15 @@ geocode <- function(listInput, host = 'http://nominatim.openstreetmap.org/search
 # ref.: recebe uma lista do tipo Address e retorna um booleano da conferência de geolocalização
 # ou um Nulo se não tiver informações o suficiente
 
-checkIbgeAddress <- function(lat, lon, city_ibge=NULL){
+checkIbgeAddress <- function(inputList){
   
   lat <- inputList$lat
   lon <- inputList$lon
-  code_ibge <-inputList$code_ibge
+  code_ibge_input <-inputList$code_ibge
   
   #se não for preenchido code_ibge, retornar nulo
   #caso contrário, seguir
-  if(is.null(code_ibge) | is.null(lat) | is.null(lon)){return(NULL)}
+  if(is.null(code_ibge_input) | is.null(lat) | is.null(lon)){return(NULL)}
   
   point <- 
     sf::st_as_sf(
@@ -138,8 +136,8 @@ checkIbgeAddress <- function(lat, lon, city_ibge=NULL){
     )
   
   geo <- 
-    geoBr %>%
-    dplyr::filter(code_muni == code_ibge)
+    ibge %>%
+    dplyr::filter(code_ibge == code_ibge_input)
   
   inside_box <- 
     dplyr::between(lat, geo$xmin, geo$xmax) & dplyr::between(lon, geo$ymin, geo$ymax)
