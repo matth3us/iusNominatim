@@ -1,7 +1,6 @@
 ## -------
 ## Configurações
 ## Função para conferir se um pacote já está instalado; se estiver, carregá-lo, se não, instalar e depois carregar
-
 lock.and.load <- function(list.of.packages){
   new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
   if(length(new.packages)) {
@@ -21,41 +20,40 @@ lock.and.load('httr')
 lock.and.load('stringr')
 
 ## -------
-## Carregar as cidades do IBGE como input para funções
-ibge <- readRDS('./transformed/ibge')
+## Carregar códigos IBGE
+# source('./script/generate_info_ibge.R')
+ibge <- readRDS('./transformed/ibge.rds')
 
 
-#########################
-## MELHORIAS NAS FUNÇÕES
-#########################
-
-test <- list(address = "planalto vinhais ii, rua 7, casa 7", code_ibge = 412673)
-
+## -------
+## Criação de "Classes"
 #Transforma um endereço em uma lista
-createAddress <- function(listAdd){
+createAddress <- function(apiInput){
     instance = list(
-          address = listAdd[['address']]
-        , code_ibge = listAdd[['code_ibge']]
+          address = apiInput[['address']]
+        , code_ibge = apiInput[['code_ibge']]
         , latitude = NA
         , longitude = NA
         , crs = NA
+        , osm_id = NA
     )
     return(instance)
 }
 
 #Transforma o input em uma lista de endereços
-createInput <- function(input){
+createInput <- function(apiInput){
     instance = list(
-          original = createAddress(input)
-        , output = list(createAddress(input))
+          original = createAddress(apiInput)
+        , output = list(createAddress(apiInput))
     )
     return(instance)
 }
 
+## -------
+## Criação de "Métodos"
 #generateAlternatives
 # ref.: recebe um objeto do tipo input, pega o parâmetro original, e devolve o output 
 # preenchido com objetos do tipo endereço
-
 generateAlternatives <- function(inputList, host = "localhost:3000"){
   
   address <- inputList$original$address
@@ -76,27 +74,31 @@ generateAlternatives <- function(inputList, host = "localhost:3000"){
 }
 
 #geocodeAddress
-geocodeAddress <- function(instanceAddress, host){
+geocodeAddress <- function(addressList){
   
-  address = instanceAddress$address
-  
-  #Se não passar endereço, retornar data frame vazio
-  if(suppressWarnings(is.null(address))){return(data.frame())}
+  address = addressList$address
+  host = 'http://nominatim.openstreetmap.org/search.php?q=@addr@&format=jsonv2'
   
   #Se a chamada der erro, retornar data frame vazio
   tryCatch(
-    d <- jsonlite::fromJSON( 
-      gsub('\\@addr\\@', gsub('\\s+', '\\%20', address), 
-           host)
-    ), error = function(c) return(data.frame())
+    listData <- 
+        jsonlite::fromJSON( 
+          base::gsub('\\@addr\\@', gsub('\\s+', '\\%20', address), host)
+        ) %>% 
+        # dplyr::filter(osm_type == "node") %>% 
+        dplyr::top_n(1) %>% 
+        dplyr::select(osm_id, lat, lon) %>% 
+        base::as.list()
+    , error = function(c) return(data.frame())
   )
   #Se a chamada não retornar nada, retornar data frame vazio
-  if(length(d) == 0){return(data.frame())}
+  if(length(listData) == 0){return(addressList)}
   
   #Se a chamada retornar coordenadas, devolver lista de input preenchida
-  newAddress <- instanceAddress
-  newAddress$latitude <- as.numeric(d$lat)
-  newAddress$longitude <- as.numeric(d$lon) 
+  newAddress <- addressList
+  newAddress$latitude <- as.numeric(listData$lat)
+  newAddress$longitude <- as.numeric(listData$lon) 
+  newAddress$osm_id <- as.character(listData$osm_id) 
   newAddress$crs <- "WGS84" 
   
   return(newAddress)
@@ -105,11 +107,11 @@ geocodeAddress <- function(instanceAddress, host){
 #geocode
 # ref.: recebe m parâmetro output de um objeto input e preenche Lat/Lon/CRS em cada um dos 
 # objetos output
-geocode <- function(listInput, host = 'http://nominatim.openstreetmap.org/search/@addr@?format=json&addressdetails=0&limit=1'){
+geocode <- function(listInput){
     newList<- listInput
     geocodedOutput <- 
         listInput$output %>%
-        lapply(geocodeAddress, host = host)
+        lapply(geocodeAddress)
     newList$output <- geocodedOutput
     return(newList)
 }
@@ -117,35 +119,35 @@ geocode <- function(listInput, host = 'http://nominatim.openstreetmap.org/search
 #checkIbgeAddress
 # ref.: recebe uma lista do tipo Address e retorna um booleano da conferência de geolocalização
 # ou um Nulo se não tiver informações o suficiente
-
-checkIbgeAddress <- function(inputList){
+checkIbgeAddress <- function(addressList){
   
-  lat <- inputList$lat
-  lon <- inputList$lon
-  code_ibge_input <-inputList$code_ibge
+  lat <- addressList$latitude
+  lon <- addressList$longitude
+  code_ibge_input <-addressList$code_ibge
   
-  #se não for preenchido code_ibge, retornar nulo
+  #se não for preenchido code_ibge, retornar True
   #caso contrário, seguir
-  if(is.null(code_ibge_input) | is.null(lat) | is.null(lon)){return(NULL)}
+  if(is.null(code_ibge_input) | is.null(lat) | is.null(lon)){return(TRUE)}
   
   point <- 
     sf::st_as_sf(
       data.frame(lat = lat, lon = lon)
-      , coords = c("lat", "lon")
+      , coords = c("lon", "lat")
       , crs = "WGS84"
     )
   
   geo <- 
     ibge %>%
-    dplyr::filter(code_ibge == code_ibge_input)
+    dplyr::filter(code_ibge == code_ibge_input) %>% 
+    st_as_sf(crs = st_crs(point))
   
   inside_box <- 
-    dplyr::between(lat, geo$xmin, geo$xmax) & dplyr::between(lon, geo$ymin, geo$ymax)
+    dplyr::between(lon, geo$xmin, geo$xmax) & dplyr::between(lat, geo$ymin, geo$ymax)
   
   inside_city <- FALSE
   
   if(inside_box){
-    inside_city <- !is.na(sf::st_join(point, geo, join=st_within)$codigo_ibge)
+    inside_city <- !is.na(sf::st_join(point, geo, join=st_within)$code_ibge)
   }
   
   return(inside_city)
@@ -153,6 +155,16 @@ checkIbgeAddress <- function(inputList){
 
 #checkIbge
 # ref.: recebe um parâmetro output de um objeto input e remove todos os que o checkIbge derem falso
-
-
-
+checkIbge <- function(inputList){
+  outputList <- inputList$output
+  newOutput <- lapply(outputList, function(x){
+      if(checkIbgeAddress(x)){
+        return(x)
+      } else {
+        return(NULL)
+      }
+  })
+  newInputList <- inputList
+  newInputList$output <- newOutput
+  return(newInputList)
+}
