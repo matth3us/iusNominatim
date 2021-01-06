@@ -21,8 +21,8 @@ lock.and.load('plumber')
 
 
 ## Funcionamento
-source('./api/iusnominatim_functions.r')
-plumber::pr("./api/iusnominatim_interactions.r") %>%
+source('iusnominatim_functions.r')
+plumber::pr("iusnominatim_interactions.r") %>%
     plumber::pr_run(port=8000)
 
 # test <- list(address = "são paulo, Viaduto do Chá, 15", code_ibge = 3550308)

@@ -21,8 +21,12 @@ lock.and.load('plumber')
 
 ## -------
 ## Carregar códigos IBGE
-# source('./script/generate_info_ibge.R')
-ibge <- readRDS('./transformed/ibge.rds')
+
+if(!file.exists("ibge.rds")){
+  source('iusnominatim_ibge.R')
+}
+
+ibge <- readRDS('ibge.rds')
 
 ## -------
 ## Criação de "Classes"
