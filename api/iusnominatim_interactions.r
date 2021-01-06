@@ -1,5 +1,19 @@
-library(plumber)
-library(tidyverse)
+## Configurações
+## Função para conferir se um pacote já está instalado; se estiver, carregá-lo, se não, instalar e depois carregar
+lock.and.load <- function(list.of.packages){
+  new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+  if(length(new.packages)) {
+    install.packages(new.packages)
+  }
+  for(i in 1:length(list.of.packages)){
+    library(list.of.packages[1], character.only=T)
+  }
+}
+
+## Instalar e carregar pacotes necessários abaixo
+lock.and.load('dplyr')
+lock.and.load('tidyr')
+lock.and.load('plumber')
 
 #* Geolocalizar endereço
 #* @param address endereço

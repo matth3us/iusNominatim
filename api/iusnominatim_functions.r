@@ -1,4 +1,3 @@
-## -------
 ## Configurações
 ## Função para conferir se um pacote já está instalado; se estiver, carregá-lo, se não, instalar e depois carregar
 lock.and.load <- function(list.of.packages){
@@ -18,12 +17,12 @@ lock.and.load('tidyr')
 lock.and.load('jsonlite')
 lock.and.load('httr')
 lock.and.load('stringr')
+lock.and.load('plumber')
 
 ## -------
 ## Carregar códigos IBGE
 # source('./script/generate_info_ibge.R')
 ibge <- readRDS('./transformed/ibge.rds')
-
 
 ## -------
 ## Criação de "Classes"
