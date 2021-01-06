@@ -14,6 +14,7 @@ lock.and.load <- function(list.of.packages){
 lock.and.load('sf')
 lock.and.load('dplyr')
 lock.and.load('geobr')
+lock.and.load('here')
 
 # Código para baixar dados do pacote geobr, inserir 
 # bounding boxes dos municípios e salvar data frame
@@ -72,4 +73,4 @@ ibge <- rg %>%
 
 rm(rg,sr,st,wa,cr,ct,ir,mr,mu,ne)
 
-saveRDS(ibge, 'ibge.rds')
+saveRDS(ibge, here('api', 'ibge.rds'))

@@ -18,15 +18,13 @@ lock.and.load('jsonlite')
 lock.and.load('httr')
 lock.and.load('stringr')
 lock.and.load('plumber')
+lock.and.load('here')
 
 ## -------
 ## Carregar códigos IBGE
 
-if(!file.exists("ibge.rds")){
-  source('iusnominatim_ibge.R')
-}
-
-ibge <- readRDS('ibge.rds')
+if(!file.exists(here('api', 'ibge.rds'))){source(here('api', 'iusnominatim_ibge.R'))}
+ibge <- readRDS(here('api', 'ibge.rds'))
 
 ## -------
 ## Criação de "Classes"
